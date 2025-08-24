@@ -1,0 +1,41 @@
+{
+  "type": "object",
+  "properties": {
+    "full": {
+      "type": ["string", "null"],
+      "description": "Complete address as a single string"
+    },
+    "house_no": {
+      "type": ["string", "null"],
+      "description": "House/building number"
+    },
+    "street": {
+      "type": ["string", "null"],
+      "description": "Street name"
+    },
+    "locality": {
+      "type": ["string", "null"],
+      "description": "Locality/area/neighborhood"
+    },
+    "city": {
+      "type": ["string", "null"],
+      "description": "City name"
+    },
+    "state": {
+      "type": ["string", "null"],
+      "description": "State name"
+    },
+    "pincode": {
+      "type": ["string", "null"],
+      "description": "6-digit postal code"
+    },
+    "confidence": {
+      "type": "number",
+      "minimum": 0.0,
+      "maximum": 1.0,
+      "description": "Confidence score for extracted address"
+    }
+  },
+  "required": ["full", "pincode", "confidence"],
+  "additionalProperties": false
+}

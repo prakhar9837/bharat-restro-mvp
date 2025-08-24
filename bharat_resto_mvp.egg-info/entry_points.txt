@@ -1,0 +1,2 @@
+[console_scripts]
+bharat-resto = app.cli:main

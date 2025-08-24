@@ -1,0 +1,64 @@
+version: '3.8'
+
+services:
+  # Main FastAPI application
+  app:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      - BHARAT_RESTO_DB_PATH=/app/data/restaurants.db
+      - BHARAT_RESTO_DATA_DIR=/app/data
+      - BHARAT_RESTO_EXPORT_DIR=/app/exports
+      - BHARAT_RESTO_LOG_LEVEL=INFO
+      - BHARAT_RESTO_LLM_ENABLED=true
+      - BHARAT_RESTO_OLLAMA_BASE_URL=http://ollama:11434
+    volumes:
+      - ./data:/app/data
+      - ./exports:/app/exports
+      - ./logs:/app/logs
+    depends_on:
+      - ollama
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Ollama for local LLM support
+  ollama:
+    image: ollama/ollama:latest
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    environment:
+      - OLLAMA_HOST=0.0.0.0
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:11434/api/version"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Nginx reverse proxy (optional, for production)
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - app
+    restart: unless-stopped
+    profiles:
+      - production
+
+volumes:
+  ollama_data:
+    driver: local
+
+networks:
+  default:
+    name: bharat-resto-network

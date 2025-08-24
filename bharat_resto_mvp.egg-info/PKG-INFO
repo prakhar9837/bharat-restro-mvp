@@ -1,0 +1,707 @@
+Metadata-Version: 2.4
+Name: bharat-resto-mvp
+Version: 0.1.0
+Summary: End-to-end pipeline for discovering and extracting Indian restaurant information
+Author-email: Bharat Resto Team <team@bharatresto.local>
+License: MIT
+Project-URL: Homepage, https://github.com/bharatresto/mvp
+Project-URL: Repository, https://github.com/bharatresto/mvp
+Project-URL: Issues, https://github.com/bharatresto/mvp/issues
+Keywords: restaurants,india,data-extraction,osm
+Classifier: Development Status :: 3 - Alpha
+Classifier: Intended Audience :: Developers
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.11
+Requires-Python: >=3.11
+Description-Content-Type: text/markdown
+License-File: LICENSE
+Requires-Dist: httpx>=0.24.0
+Requires-Dist: requests-cache>=1.1.0
+Requires-Dist: lxml>=4.9.0
+Requires-Dist: beautifulsoup4>=4.12.0
+Requires-Dist: readability-lxml>=0.8.0
+Requires-Dist: pdfminer.six>=20221105
+Requires-Dist: pytesseract>=0.3.10
+Requires-Dist: Pillow>=10.0.0
+Requires-Dist: geopy>=2.3.0
+Requires-Dist: sqlalchemy>=2.0.0
+Requires-Dist: typer>=0.9.0
+Requires-Dist: pydantic>=2.0.0
+Requires-Dist: pydantic-settings>=2.0.0
+Requires-Dist: python-dotenv>=1.0.0
+Requires-Dist: structlog>=23.1.0
+Requires-Dist: python-slugify>=8.0.0
+Requires-Dist: rapidfuzz>=3.0.0
+Requires-Dist: geohash2>=1.1
+Requires-Dist: pytest>=7.4.0
+Requires-Dist: pytest-cov>=4.1.0
+Provides-Extra: dev
+Requires-Dist: black>=23.0.0; extra == "dev"
+Requires-Dist: ruff>=0.0.280; extra == "dev"
+Requires-Dist: mypy>=1.5.0; extra == "dev"
+Dynamic: license-file
+
+# Bharat Resto MVP
+
+A comprehensive pipeline for discovering, extracting, and validating Indian restaurant data from open sources including OpenStreetMap (OSM), official websites, and PDF documents. Built with Python 3.11+ and designed for local-first operation using only open-source tools.
+
+## 🌟 Features
+
+- **Multi-Source Data Collection**: OSM, restaurant websites, PDF menus
+- **Local LLM Integration**: Uses Ollama for optional AI-powered extraction
+- **Robust Data Pipeline**: Fetch → Parse → Extract → Normalize → Validate → Store
+- **Entity Resolution**: Deduplication using name similarity and geospatial hashing
+- **Comprehensive Validation**: Strict rules for Indian restaurant data
+- **Export Capabilities**: CSV, JSON with provenance tracking
+- **Evaluation Framework**: Metrics against gold standard dataset
+- **Production Ready**: Type hints, comprehensive logging, error handling
+
+## 🚀 Quick Start
+
+### Prerequisites
+
+- Python 3.11+
+- [Ollama](https://ollama.ai/) (optional, for LLM-based extraction)
+
+### Installation
+
+1. **Clone the repository**:
+   ```bash
+   git clone <repository-url>
+   cd bharat-resto-mvp
+   ```
+
+2. **Install dependencies**:
+   ```bash
+   pip install -e .
+   ```
+
+3. **Setup Ollama** (optional):
+   ```bash
+   # Install Ollama
+   curl -fsSL https://ollama.ai/install.sh | sh
+   
+   # Pull a model (e.g., llama2)
+   ollama pull llama2
+   ```
+
+4. **Configure environment** (optional):
+   ```bash
+   cp .env.example .env
+   # Edit .env with your preferences
+   ```
+
+### Basic Usage
+
+**Run the complete pipeline**:
+```bash
+bharat-resto run --city blr --limit 10
+```
+
+**Available commands**:
+```bash
+# Full pipeline
+bharat-resto run --city del --limit 50 --llm
+
+# Individual steps
+bharat-resto seed-cmd --city mum --limit 20
+bharat-resto validate-cmd
+bharat-resto export-cmd --format csv
+bharat-resto eval-cmd
+
+# Check status
+bharat-resto status
+```
+
+## 🏗️ Architecture
+
+### Project Structure
+
+```
+bharat-resto-mvp/
+├── app/
+│   ├── __init__.py           # Package initialization
+│   ├── cli.py               # Command-line interface
+│   ├── config.py            # Configuration management
+│   ├── persist.py           # Database models & operations
+│   ├── seed.py              # OSM data seeding
+│   ├── discover.py          # Website discovery
+│   ├── fetch.py             # Content fetching
+│   ├── parse.py             # Content parsing (HTML/PDF/OCR)
+│   ├── extract/             # Extraction modules
+│   │   ├── __init__.py
+│   │   ├── client.py        # LLM client
+│   │   ├── router.py        # Extraction router
+│   │   ├── address.py       # Address extractor
+│   │   ├── phone.py         # Phone extractor
+│   │   ├── hours.py         # Hours extractor
+│   │   └── cuisines.py      # Cuisine extractor
+│   ├── normalize.py         # Data normalization
+│   ├── validate.py          # Data validation
+│   ├── geocode.py           # Geocoding service
+│   ├── resolve.py           # Entity resolution
+│   ├── export.py            # Data export
+│   ├── eval.py              # Evaluation metrics
+│   ├── log.py               # Logging configuration
+│   └── utils.py             # Utility functions
+├── data/
+│   ├── city_coords.csv      # City coordinate mappings
+│   ├── curated_sites.csv    # Manual website mappings
+│   ├── gold_standard.csv    # Evaluation dataset
+│   └── prompt_schemas/      # LLM prompt templates
+├── exports/                 # Generated exports
+├── tests/                   # Test files
+├── .env.example            # Environment template
+├── pyproject.toml          # Project configuration
+└── README.md               # This file
+```
+
+### Data Flow
+
+```mermaid
+graph TD
+    A[OSM/CSV Seed] --> B[Website Discovery]
+    B --> C[Content Fetching]
+    C --> D[Content Parsing]
+    D --> E[LLM/Regex Extraction]
+    E --> F[Data Normalization]
+    F --> G[Validation]
+    G --> H[Entity Resolution]
+    H --> I[Database Storage]
+    I --> J[Export CSV/JSON]
+    I --> K[Evaluation Metrics]
+```
+
+## 📊 Data Schema
+
+### Restaurant Entity
+
+| Field | Type | Description | Example |
+|-------|------|-------------|---------|
+| `restaurant_id` | str | Unique identifier | `resto_blr_001` |
+| `canonical_name` | str | Restaurant name | `Mavalli Tiffin Room` |
+| `address_full` | str | Complete address | `14, Lalbagh Rd, Mavalli, Bengaluru` |
+| `pincode` | str | Postal code | `560004` |
+| `lat` | float | Latitude | `12.9352` |
+| `lon` | float | Longitude | `77.5869` |
+| `phone` | str | Contact number | `+91 80 2222 0022` |
+| `website` | str | Official website | `https://mtrfood.com` |
+| `cuisines` | list | Cuisine types | `["South Indian", "Vegetarian"]` |
+| `hours` | dict | Operating hours | `{"mon": "06:30-22:30", ...}` |
+
+### Provenance Tracking
+
+Every extracted field includes:
+- **Source URL**: Where the data came from
+- **Confidence**: Extraction confidence (0.0-1.0)
+- **Model Info**: LLM model used or "regex"
+- **Timestamp**: When extracted
+
+## 🎯 Supported Cities
+
+| City | Code | OSM Area ID |
+|------|------|-------------|
+| Bengaluru | `blr` | 1737247 |
+| Delhi | `del` | 65606 |
+| Mumbai | `mum` | 1273574 |
+| Chennai | `che` | 1259306 |
+| Hyderabad | `hyd` | 1753580 |
+| Pune | `pun` | 1711864 |
+| Kolkata | `kol` | 1272880 |
+| Ahmedabad | `ahm` | 2065515 |
+| Jaipur | `jai` | 1719234 |
+| Kochi | `koc` | 1762415 |
+
+## 🔧 Configuration
+
+### Environment Variables
+
+```bash
+# Data directories
+DATA_DIR=/path/to/data
+EXPORT_DIR=/path/to/exports
+
+# Database
+DB_PATH=/path/to/database.sqlite
+
+# LLM settings
+LLM_ENABLED=true
+OLLAMA_BASE_URL=http://localhost:11434
+OLLAMA_MODEL=llama2
+
+# Rate limiting
+FETCH_DELAY_MIN=0.5
+FETCH_DELAY_MAX=2.0
+
+# Geocoding
+GEOCODE_CACHE_SIZE=10000
+
+# Logging
+LOG_LEVEL=INFO
+```
+
+### Configuration File
+
+Create `.env` or modify `app/config.py`:
+
+```python
+from pydantic_settings import BaseSettings
+
+class Settings(BaseSettings):
+    # Override default values
+    data_dir: Path = Path("./custom_data")
+    llm_enabled: bool = False
+    ollama_model: str = "mistral"
+    
+    class Config:
+        env_file = ".env"
+```
+
+## 🤖 LLM Integration
+
+### Ollama Setup
+
+1. **Install Ollama**:
+   ```bash
+   curl -fsSL https://ollama.ai/install.sh | sh
+   ```
+
+2. **Pull models**:
+   ```bash
+   # Recommended models
+   ollama pull llama2          # 7B params, good balance
+   ollama pull mistral         # 7B params, fast
+   ollama pull codellama       # Good for structured extraction
+   ```
+
+3. **Test connection**:
+   ```bash
+   curl http://localhost:11434/api/generate \
+     -d '{"model": "llama2", "prompt": "Hello world"}'
+   ```
+
+### Model Comparison
+
+| Model | Size | Speed | Quality | Memory |
+|-------|------|-------|---------|--------|
+| `llama2` | 7B | Medium | High | 8GB RAM |
+| `mistral` | 7B | Fast | High | 6GB RAM |
+| `codellama` | 7B | Medium | High* | 8GB RAM |
+| `llama2:13b` | 13B | Slow | Very High | 16GB RAM |
+
+*CodeLlama excels at structured data extraction
+
+### Fallback Mode
+
+The pipeline works without LLM using regex extractors:
+
+```bash
+# Disable LLM
+bharat-resto run --no-llm
+```
+
+Regex patterns handle:
+- Phone numbers (Indian formats)
+- Addresses (Indian patterns)
+- Basic hours parsing
+- Common cuisine keywords
+
+## 📝 Data Sources
+
+### OpenStreetMap (OSM)
+
+- **API**: Overpass API
+- **Query**: Restaurants, cafes, fast food in city boundaries
+- **Fields**: name, address, phone, website, cuisine, opening_hours
+- **Rate Limit**: Built-in respect for OSM usage policy
+
+### Restaurant Websites
+
+- **Discovery**: Heuristic URL guessing, search engines
+- **Parsing**: HTML content extraction
+- **Formats**: HTML pages, embedded JSON-LD
+- **Compliance**: robots.txt checking, rate limiting
+
+### PDF Documents
+
+- **Sources**: Online menus, information brochures
+- **Extraction**: pdfminer.six + OCR fallback
+- **OCR**: Tesseract for scanned documents
+- **Languages**: English, Hindi (with proper font support)
+
+## 🔍 Extraction Details
+
+### Address Extraction
+
+**LLM Approach**:
+- Structured JSON schema with validation
+- Indian address format understanding
+- Pincode validation (6-digit Indian format)
+
+**Regex Fallback**:
+```python
+# Indian pincode pattern
+pincode_pattern = r'\b[1-9]\d{5}\b'
+
+# Address line detection
+address_indicators = ['address', 'location', 'situated', 'located']
+```
+
+### Phone Number Extraction
+
+**Formats Supported**:
+- `+91 XX XXXX XXXX` (international)
+- `0XX XXXX XXXX` (national)
+- `XXXXXXXXXX` (10-digit)
+- `+91-XX-XXXX-XXXX` (with dashes)
+
+**Validation**:
+- Indian mobile: starts with 6,7,8,9
+- Landline: includes STD codes
+- Removes common false positives
+
+### Cuisine Classification
+
+**Categories**:
+- Regional: North Indian, South Indian, Bengali, Punjabi
+- International: Chinese, Continental, Italian
+- Specific: Vegetarian, Vegan, Jain
+- Styles: Fast Food, Fine Dining, Street Food
+
+### Hours Extraction
+
+**Format**: 24-hour with day-wise breakdown
+```json
+{
+  "mon": "09:00-22:00",
+  "tue": "09:00-22:00",
+  "wed": "09:00-22:00",
+  "thu": "09:00-22:00",
+  "fri": "09:00-23:00",
+  "sat": "09:00-23:00",
+  "sun": "10:00-22:00"
+}
+```
+
+## ✅ Validation Rules
+
+### Mandatory Fields
+- `canonical_name`: Non-empty string
+- `lat`, `lon`: Valid coordinates within India bounds
+
+### Format Validation
+- **Phone**: Indian formats only
+- **Pincode**: 6-digit Indian postal codes
+- **Website**: Valid HTTP/HTTPS URLs
+- **Coordinates**: Latitude: 8-37°N, Longitude: 68-97°E
+
+### Business Logic
+- **Hours**: Valid time ranges, no overlaps
+- **Cuisines**: From predefined taxonomy
+- **Address**: Contains Indian address indicators
+
+### Data Quality Checks
+- **Completeness**: Percentage of filled fields
+- **Consistency**: Cross-field validation
+- **Uniqueness**: No duplicate restaurants
+
+## 📈 Evaluation Metrics
+
+### Gold Standard Dataset
+
+Located at `data/gold_standard.csv` with manually verified restaurants:
+
+```csv
+restaurant_id,canonical_name,address_full,phone,cuisines,hours
+resto_blr_001,Mavalli Tiffin Room,"14, Lalbagh Rd, Bengaluru",+91 80 2222 0022,"[""South Indian""]","{""mon"": ""06:30-22:30""}"
+```
+
+### Metrics Calculated
+
+**Field-Level Metrics**:
+- Precision: % of extracted values that are correct
+- Recall: % of correct values that were extracted  
+- F1-Score: Harmonic mean of precision and recall
+
+**Overall Metrics**:
+- **Extraction Coverage**: % of restaurants with each field
+- **Data Quality Score**: Weighted average of field accuracies
+- **Completeness**: Average fields per restaurant
+
+### Running Evaluation
+
+```bash
+# Quick summary
+bharat-resto eval-cmd
+
+# Detailed report
+bharat-resto eval-cmd --output evaluation_report.json
+
+# Against custom gold standard
+bharat-resto eval-cmd --gold-file custom_gold.csv
+```
+
+## 🚀 Performance
+
+### Benchmarks
+
+**Pipeline Performance** (100 restaurants):
+- Seeding: ~30 seconds
+- Website discovery: ~2 minutes
+- Content fetching: ~5 minutes
+- Extraction: ~3 minutes (LLM) / ~30 seconds (regex)
+- Total: ~10 minutes
+
+**Memory Usage**:
+- Base pipeline: ~200MB
+- With LLM (7B): ~8GB
+- SQLite database: ~50KB per restaurant
+
+### Optimization Tips
+
+1. **Parallel Processing**:
+   ```bash
+   bharat-resto run --concurrency 8
+   ```
+
+2. **Batch Size Tuning**:
+   ```python
+   # In config.py
+   fetch_batch_size: int = 10
+   extract_batch_size: int = 5
+   ```
+
+3. **Caching**:
+   - HTTP responses cached with requests-cache
+   - Geocoding results cached in SQLite
+   - OSM data cached locally
+
+## 🧪 Testing
+
+### Unit Tests
+
+```bash
+# Run all tests
+pytest
+
+# With coverage
+pytest --cov=app
+
+# Specific module
+pytest tests/test_extract.py
+```
+
+### Integration Tests
+
+```bash
+# End-to-end pipeline test
+pytest tests/test_integration.py
+
+# With sample data
+pytest tests/test_integration.py::test_sample_pipeline
+```
+
+### Test Structure
+
+```
+tests/
+├── conftest.py              # Shared fixtures
+├── test_seed.py             # OSM seeding tests
+├── test_fetch.py            # Content fetching tests
+├── test_extract.py          # Extraction tests
+├── test_validate.py         # Validation tests
+├── test_integration.py      # End-to-end tests
+└── fixtures/                # Test data
+    ├── sample_restaurants.csv
+    ├── sample_html.html
+    └── sample_menu.pdf
+```
+
+## 🔧 Development
+
+### Setting up Development Environment
+
+```bash
+# Clone repository
+git clone <repo-url>
+cd bharat-resto-mvp
+
+# Create virtual environment
+python -m venv venv
+source venv/bin/activate  # Windows: venv\Scripts\activate
+
+# Install in development mode
+pip install -e ".[dev]"
+
+# Install pre-commit hooks
+pre-commit install
+```
+
+### Code Quality
+
+**Linting**:
+```bash
+# Format code
+black app/
+isort app/
+
+# Type checking
+mypy app/
+
+# Linting
+flake8 app/
+```
+
+**Pre-commit hooks** automatically run:
+- black (formatting)
+- isort (import sorting)
+- flake8 (linting)
+- mypy (type checking)
+
+### Adding New Cities
+
+1. **Get OSM area ID**:
+   ```python
+   # Use Nominatim to find area
+   import requests
+   
+   url = "https://nominatim.openstreetmap.org/search"
+   params = {"q": "Mumbai, India", "format": "json", "limit": 1}
+   response = requests.get(url, params=params)
+   data = response.json()[0]
+   osm_id = data["osm_id"]
+   ```
+
+2. **Add to city coordinates**:
+   ```python
+   # In app/seed.py or data/city_coords.csv
+   "new_city": {"lat": 19.0760, "lon": 72.8777, "area_id": 1273574}
+   ```
+
+3. **Test seeding**:
+   ```bash
+   bharat-resto seed-cmd --city new_city --limit 5
+   ```
+
+### Adding New Extractors
+
+1. **Create extractor module**:
+   ```python
+   # app/extract/new_field.py
+   from .base import BaseExtractor
+   
+   class NewFieldExtractor(BaseExtractor):
+       def extract(self, chunks: List[str]) -> Dict[str, Any]:
+           # Implementation
+           pass
+   ```
+
+2. **Register in router**:
+   ```python
+   # app/extract/router.py
+   from .new_field import NewFieldExtractor
+   
+   EXTRACTORS = {
+       "new_field": NewFieldExtractor(),
+       # ... existing extractors
+   }
+   ```
+
+3. **Add validation**:
+   ```python
+   # app/validate.py
+   def validate_new_field(value: Any) -> List[str]:
+       # Validation logic
+       pass
+   ```
+
+## 🚀 Deployment
+
+### Docker Deployment
+
+```dockerfile
+FROM python:3.11-slim
+
+WORKDIR /app
+COPY . .
+
+RUN pip install -e .
+
+# Install Ollama (optional)
+RUN curl -fsSL https://ollama.ai/install.sh | sh
+
+CMD ["bharat-resto", "run"]
+```
+
+### Production Considerations
+
+1. **Database**: Consider PostgreSQL for production
+2. **Caching**: Add Redis for better performance
+3. **Monitoring**: Use structlog for structured logging
+4. **Rate Limiting**: Implement proper rate limiting
+5. **Error Handling**: Add retry mechanisms
+6. **Scaling**: Use celery for background processing
+
+### API Server
+
+```python
+# api.py
+from fastapi import FastAPI
+from app.cli import _run_pipeline
+
+app = FastAPI()
+
+@app.post("/extract/{city}")
+async def extract_city(city: str, limit: int = 100):
+    result = await _run_pipeline(city, limit, None, 4)
+    return {"status": "completed", "city": city}
+```
+
+## 📚 References
+
+### Data Sources
+- [OpenStreetMap](https://www.openstreetmap.org/) - Geographic data
+- [Overpass API](https://overpass-turbo.eu/) - OSM query interface
+- [Nominatim](https://nominatim.org/) - Geocoding service
+
+### Technologies
+- [Ollama](https://ollama.ai/) - Local LLM runtime
+- [SQLAlchemy](https://sqlalchemy.org/) - Database ORM
+- [Pydantic](https://pydantic.dev/) - Data validation
+- [Typer](https://typer.tiangolo.com/) - CLI framework
+- [BeautifulSoup](https://www.crummy.com/software/BeautifulSoup/) - HTML parsing
+
+### Standards
+- [JSON Schema](https://json-schema.org/) - Data structure validation
+- [OpenAPI](https://swagger.io/specification/) - API documentation
+- [robots.txt](https://www.robotstxt.org/) - Web scraping ethics
+
+## 📄 License
+
+MIT License - see LICENSE file for details.
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make changes with tests
+4. Submit a pull request
+
+### Reporting Issues
+
+Please include:
+- Python version
+- Operating system
+- Error messages
+- Steps to reproduce
+
+## 📞 Support
+
+- **Documentation**: This README
+- **Issues**: GitHub Issues
+- **Discussions**: GitHub Discussions
+
+---
+
+**Built with ❤️ for the Indian restaurant ecosystem**

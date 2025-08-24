@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bharat Resto MVP - Restaurant Data Pipeline</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 40px;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 25px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            backdrop-filter: blur(10px);
+        }
+
+        .card h2 {
+            color: #4a5568;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 10px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #4a5568;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+        }
+
+        .status-display {
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+
+        .status-running {
+            background: #fef5e7;
+            border-left: 4px solid #f6ad55;
+            color: #744210;
+        }
+
+        .status-completed {
+            background: #f0fff4;
+            border-left: 4px solid #48bb78;
+            color: #22543d;
+        }
+
+        .status-failed {
+            background: #fed7d7;
+            border-left: 4px solid #f56565;
+            color: #742a2a;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #e2e8f0;
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            transition: width 0.3s ease;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+
+        .stat-item {
+            text-align: center;
+            padding: 20px;
+            background: #f8fafc;
+            border-radius: 8px;
+            border: 2px solid #e2e8f0;
+        }
+
+        .stat-item h3 {
+            font-size: 2em;
+            color: #667eea;
+            margin-bottom: 5px;
+        }
+
+        .restaurant-list {
+            max-height: 400px;
+            overflow-y: auto;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+        }
+
+        .restaurant-item {
+            padding: 15px;
+            border-bottom: 1px solid #e2e8f0;
+            transition: background-color 0.2s;
+        }
+
+        .restaurant-item:hover {
+            background-color: #f8fafc;
+        }
+
+        .restaurant-item:last-child {
+            border-bottom: none;
+        }
+
+        .restaurant-name {
+            font-weight: 600;
+            color: #2d3748;
+            margin-bottom: 5px;
+        }
+
+        .restaurant-details {
+            color: #718096;
+            font-size: 0.9em;
+        }
+
+        .api-links {
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        .api-link {
+            padding: 8px 16px;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            text-decoration: none;
+            color: #4a5568;
+            transition: all 0.2s;
+        }
+
+        .api-link:hover {
+            background: #e2e8f0;
+            text-decoration: none;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            
+            .header h1 {
+                font-size: 2em;
+            }
+            
+            .stats-grid {
+                grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            }
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #718096;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🍽️ Bharat Resto MVP</h1>
+            <p>AI-Powered Indian Restaurant Data Extraction Pipeline</p>
+        </div>
+
+        <!-- System Status -->
+        <div class="card">
+            <h2>📊 System Status</h2>
+            <div class="stats-grid" id="stats-grid">
+                <div class="stat-item">
+                    <h3 id="total-restaurants">-</h3>
+                    <p>Total Restaurants</p>
+                </div>
+                <div class="stat-item">
+                    <h3 id="total-provenance">-</h3>
+                    <p>Provenance Records</p>
+                </div>
+                <div class="stat-item">
+                    <h3 id="database-status">-</h3>
+                    <p>Database Status</p>
+                </div>
+            </div>
+            <button class="btn btn-secondary" onclick="loadStatus()">🔄 Refresh Status</button>
+        </div>
+
+        <!-- Pipeline Control -->
+        <div class="card">
+            <h2>🚀 Run Data Pipeline</h2>
+            <form id="pipeline-form">
+                <div class="form-group">
+                    <label for="city">City:</label>
+                    <select id="city" class="form-control" required>
+                        <option value="blr">Bengaluru (Bangalore)</option>
+                        <option value="del">Delhi</option>
+                        <option value="mum">Mumbai</option>
+                        <option value="che">Chennai</option>
+                        <option value="hyd">Hyderabad</option>
+                        <option value="pun">Pune</option>
+                        <option value="kol">Kolkata</option>
+                        <option value="ahm">Ahmedabad</option>
+                        <option value="jai">Jaipur</option>
+                        <option value="koc">Kochi</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="limit">Limit (max restaurants to process):</label>
+                    <input type="number" id="limit" class="form-control" value="50" min="1" max="1000">
+                </div>
+
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" id="llm-enabled" checked> Enable LLM Extraction
+                    </label>
+                </div>
+
+                <div class="form-group">
+                    <label for="concurrency">Concurrency:</label>
+                    <input type="number" id="concurrency" class="form-control" value="4" min="1" max="10">
+                </div>
+
+                <button type="submit" class="btn" id="run-pipeline-btn">🚀 Run Pipeline</button>
+            </form>
+
+            <div id="pipeline-status" class="hidden">
+                <div class="status-display" id="status-display">
+                    <strong>Status:</strong> <span id="status-text">-</span><br>
+                    <strong>Progress:</strong> <span id="progress-text">-</span><br>
+                    <strong>Message:</strong> <span id="message-text">-</span>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progress-fill" style="width: 0%"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Restaurant Browser -->
+        <div class="card">
+            <h2>🍽️ Browse Restaurants</h2>
+            <div class="form-group">
+                <label for="search-cuisine">Filter by Cuisine:</label>
+                <input type="text" id="search-cuisine" class="form-control" placeholder="e.g., Indian, North Indian, etc.">
+            </div>
+            
+            <div class="form-group">
+                <label>
+                    <input type="checkbox" id="has-phone"> Only restaurants with phone numbers
+                </label>
+            </div>
+            
+            <div class="form-group">
+                <label>
+                    <input type="checkbox" id="has-website"> Only restaurants with websites
+                </label>
+            </div>
+
+            <button class="btn btn-secondary" onclick="loadRestaurants()">🔍 Search Restaurants</button>
+
+            <div id="restaurants-container">
+                <div id="restaurants-loading" class="loading hidden">Loading restaurants...</div>
+                <div id="restaurants-list" class="restaurant-list" style="margin-top: 20px;"></div>
+            </div>
+        </div>
+
+        <!-- Export Data -->
+        <div class="card">
+            <h2>📥 Export Data</h2>
+            <p>Download restaurant data in various formats:</p>
+            <div style="margin-top: 15px;">
+                <a href="/export/csv" class="btn" style="text-decoration: none; margin-right: 10px;">📊 Download CSV</a>
+                <a href="/export/json" class="btn btn-secondary" style="text-decoration: none;">📋 Download JSON</a>
+            </div>
+        </div>
+
+        <!-- API Documentation -->
+        <div class="card">
+            <h2>📚 API Documentation</h2>
+            <p>Explore the REST API endpoints:</p>
+            <div class="api-links">
+                <a href="/docs" class="api-link">📖 Interactive Docs (Swagger)</a>
+                <a href="/redoc" class="api-link">📘 ReDoc Documentation</a>
+                <a href="/openapi.json" class="api-link">📄 OpenAPI Schema</a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let currentTaskId = null;
+        let statusInterval = null;
+
+        // Load system status
+        async function loadStatus() {
+            try {
+                const response = await fetch('/status');
+                const data = await response.json();
+                
+                document.getElementById('total-restaurants').textContent = data.total_restaurants;
+                document.getElementById('total-provenance').textContent = data.total_provenance;
+                document.getElementById('database-status').textContent = 'Connected';
+            } catch (error) {
+                console.error('Failed to load status:', error);
+                document.getElementById('database-status').textContent = 'Error';
+            }
+        }
+
+        // Run pipeline
+        document.getElementById('pipeline-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const formData = {
+                city: document.getElementById('city').value,
+                limit: parseInt(document.getElementById('limit').value),
+                llm_enabled: document.getElementById('llm-enabled').checked,
+                concurrency: parseInt(document.getElementById('concurrency').value)
+            };
+
+            try {
+                const response = await fetch('/pipeline/run', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(formData)
+                });
+
+                const data = await response.json();
+                
+                if (response.ok) {
+                    currentTaskId = data.task_id;
+                    document.getElementById('pipeline-status').classList.remove('hidden');
+                    document.getElementById('run-pipeline-btn').disabled = true;
+                    document.getElementById('run-pipeline-btn').textContent = '🔄 Pipeline Running...';
+                    
+                    // Start monitoring status
+                    monitorPipelineStatus();
+                } else {
+                    alert('Failed to start pipeline: ' + data.detail);
+                }
+            } catch (error) {
+                console.error('Failed to start pipeline:', error);
+                alert('Failed to start pipeline');
+            }
+        });
+
+        // Monitor pipeline status
+        function monitorPipelineStatus() {
+            if (!currentTaskId) return;
+
+            statusInterval = setInterval(async () => {
+                try {
+                    const response = await fetch(`/pipeline/status/${currentTaskId}`);
+                    const data = await response.json();
+                    
+                    updatePipelineStatus(data);
+                    
+                    if (data.status === 'completed' || data.status === 'failed') {
+                        clearInterval(statusInterval);
+                        document.getElementById('run-pipeline-btn').disabled = false;
+                        document.getElementById('run-pipeline-btn').textContent = '🚀 Run Pipeline';
+                        
+                        // Refresh status and restaurants
+                        loadStatus();
+                        loadRestaurants();
+                    }
+                } catch (error) {
+                    console.error('Failed to get pipeline status:', error);
+                }
+            }, 2000);
+        }
+
+        // Update pipeline status display
+        function updatePipelineStatus(data) {
+            const statusDisplay = document.getElementById('status-display');
+            const statusText = document.getElementById('status-text');
+            const progressText = document.getElementById('progress-text');
+            const messageText = document.getElementById('message-text');
+            const progressFill = document.getElementById('progress-fill');
+
+            statusText.textContent = data.status.charAt(0).toUpperCase() + data.status.slice(1);
+            progressText.textContent = Math.round(data.progress * 100) + '%';
+            messageText.textContent = data.message;
+            progressFill.style.width = (data.progress * 100) + '%';
+
+            // Update status styling
+            statusDisplay.className = 'status-display status-' + data.status;
+        }
+
+        // Load restaurants
+        async function loadRestaurants() {
+            const loadingEl = document.getElementById('restaurants-loading');
+            const listEl = document.getElementById('restaurants-list');
+            
+            loadingEl.classList.remove('hidden');
+            listEl.innerHTML = '';
+
+            try {
+                // Build query parameters
+                const params = new URLSearchParams();
+                
+                const cuisine = document.getElementById('search-cuisine').value.trim();
+                if (cuisine) params.append('cuisine', cuisine);
+                
+                if (document.getElementById('has-phone').checked) {
+                    params.append('has_phone', 'true');
+                }
+                
+                if (document.getElementById('has-website').checked) {
+                    params.append('has_website', 'true');
+                }
+
+                params.append('limit', '100');
+
+                const response = await fetch('/restaurants?' + params.toString());
+                const restaurants = await response.json();
+                
+                loadingEl.classList.add('hidden');
+                
+                if (restaurants.length === 0) {
+                    listEl.innerHTML = '<div class="restaurant-item">No restaurants found matching the criteria.</div>';
+                } else {
+                    listEl.innerHTML = restaurants.map(restaurant => `
+                        <div class="restaurant-item">
+                            <div class="restaurant-name">${restaurant.canonical_name}</div>
+                            <div class="restaurant-details">
+                                ${restaurant.address_full || 'No address'}<br>
+                                ${restaurant.phone ? `📞 ${restaurant.phone}` : 'No phone'} | 
+                                ${restaurant.website ? `🌐 <a href="${restaurant.website}" target="_blank">Website</a>` : 'No website'}<br>
+                                Cuisines: ${restaurant.cuisines.join(', ') || 'Not specified'}
+                            </div>
+                        </div>
+                    `).join('');
+                }
+            } catch (error) {
+                console.error('Failed to load restaurants:', error);
+                loadingEl.classList.add('hidden');
+                listEl.innerHTML = '<div class="restaurant-item">Failed to load restaurants.</div>';
+            }
+        }
+
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', () => {
+            loadStatus();
+            loadRestaurants();
+        });
+    </script>
+</body>
+</html>
